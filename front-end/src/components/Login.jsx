@@ -2,11 +2,14 @@ import React, { useState } from "react";
 import "bootstrap/dist/css/bootstrap.min.css";
 import axios from "axios";
 import { BASE_URL } from "../utils/config.js";
+import { useNavigate } from "react-router-dom";
 
-const Login = () => {
+const Login = ({ setUser }) => {
+  // Accept setUser as a prop
   const [userName, setUserName] = useState("");
   const [password, setPassword] = useState("");
   const [message, setMessage] = useState("");
+  const navigate = useNavigate();
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -19,16 +22,15 @@ const Login = () => {
           password,
         },
         {
-          withCredentials: true, // Include cookies for session
+          withCredentials: true,
         }
       );
 
+      setUser({ id: response.data.id, userName: response.data.userName });
       setMessage("Login successful!");
-      // Optionally, redirect to another page or reset the form
       setUserName("");
       setPassword("");
     } catch (error) {
-      // Check if there's a response from the server
       if (error.response) {
         setMessage(`Error: ${error.response.data.message}`);
       } else {

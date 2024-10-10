@@ -3,40 +3,38 @@ import multer from "multer";
 
 export const storage = multer.diskStorage({
   destination: async (req, file, next) => {
-    const uploadsDir = "./uploads";
+    const uploadsDir = "./uploads"; // Make sure this path exists or is created
     try {
-      // Tikriname ar direktorija jau sukurta
+      // Check if directory exists
       await access(uploadsDir);
     } catch {
-      // Jeigu direktorijos nera gauname klaida dėl kurios atsiduriame catch bloke
-      // Sukuriame direktorija
-      await mkdir(uploadsDir);
+      // Create directory if it doesn't exist
+      await mkdir(uploadsDir, { recursive: true });
     }
-    // Perduodame sukurtos direktorijos adresa
     next(null, uploadsDir);
   },
   filename: (req, file, next) => {
-    // Sukuriamas unikalus failo vardas, kuris sudarytas is datas ir atsitiktinio skaiciaus
-    // Paskui prie vardo pridedama originaliojo failo plitininis
-    let filename = Date.now() + "-" + Math.round(Math.random() * 1e9);
-    let originalName = file.originalname.split(".");
-    const extension = originalName[originalName.length - 1];
-
-    next(null, filename + "." + extension);
+    // Create unique filename
+    const timestamp = Date.now();
+    const randomNum = Math.round(Math.random() * 1e9);
+    const originalExt = file.originalname.split(".").pop(); // Get file extension
+    const uniqueFilename = `${timestamp}-${randomNum}.${originalExt}`;
+    next(null, uniqueFilename);
   },
 });
 
 export const upload = multer({
   storage,
   fileFilter: (req, file, next) => {
-    // Tikriname ar failo tipas yra leidziamas
-    // Jeigu tipas nera leidziamas, returniname klaida
-    const allowedTypes = ["image/jpeg", "image/png", "image/gif", "image/webp"];
-
-    if (!allowedTypes.includes(file.mimetype))
-      return next("Ivyko klaida", false);
-
-    // Jeigu tipas leidziamas, returniname teigiam  atsakyma
-    next(null, true);
+    // Allow only specific image types
+    const allowedTypes = ["image/jpeg", "image/png", "image/webp"];
+    if (!allowedTypes.includes(file.mimetype)) {
+      return next(
+        new Error("Invalid file type. Only images are allowed."),
+        false
+      );
+    }
+    next(null, true); // Proceed if file type is valid
   },
+  limits: { fileSize: 5 * 1024 * 1024 }, // Limit file size to 5MB
 });

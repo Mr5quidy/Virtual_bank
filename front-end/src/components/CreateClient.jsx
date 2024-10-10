@@ -31,9 +31,6 @@ const CreateClient = () => {
         formData,
         {
           withCredentials: true, // Include cookies for session
-          // headers: {
-          //   "Content-Type": "multipart/form-data",
-          // },
         }
       );
 

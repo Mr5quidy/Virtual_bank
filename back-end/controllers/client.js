@@ -5,19 +5,42 @@ import { checkAuth } from "../middleware/auth.js";
 
 const router = Router();
 
-// New client creation
+// Multer upload error handler
+const uploadErrorHandler = (err, req, res, next) => {
+  if (err instanceof multer.MulterError) {
+    // A Multer-specific error occurred
+    return res
+      .status(400)
+      .json({ message: `File upload error: ${err.message}` });
+  } else if (err) {
+    // Any other unknown error occurred
+    return res
+      .status(500)
+      .json({ message: "An unknown error occurred during file upload" });
+  }
+  next();
+};
+router.get("/clients", checkAuth, async (req, res) => {
+  try {
+    const clients = await Client.find({ user: req.session.user.id }); // Fetch clients for the logged-in user
+    res.status(200).json(clients); // Return the list of clients
+  } catch (error) {
+    console.error("Error fetching clients:", error);
+    res
+      .status(500)
+      .json({ message: "Unable to reach server", error: error.message });
+  }
+});
+
+// New client creation route
 router.post(
   "/create-client",
-  checkAuth, // Ensure that this middleware checks if the user is logged in
-  upload.single("idPhoto"),
+  checkAuth, // Ensure user is authenticated
+  upload.single("idPhoto"), // Handle file upload
+  uploadErrorHandler, // Handle multer errors
   async (req, res) => {
     try {
-      // Check if user session exists
-      if (!req.session.user) {
-        return res.status(401).json({ message: "Unauthorized" });
-      }
-
-      // Ensure all required fields are provided
+      // Ensure all required fields are present
       const { firstName, secondName, iban, idNumber } = req.body;
 
       if (!firstName || !secondName || !iban || !idNumber || !req.file) {
@@ -27,28 +50,30 @@ router.post(
         });
       }
 
-      // Create new client object with the user ID from the session
+      // Create new client object
       const newClient = new Client({
         firstName,
         secondName,
         iban,
         idNumber,
-        idPhoto: req.file.filename, // Ensure your upload middleware is configured properly
-        user: req.session.user.id, // Use the ID from the session
+        idPhoto: req.file.filename, // File uploaded by multer
+        user: req.session.user.id, // User ID from the session
       });
 
-      // Validate and save the client
+      // Save the new client in the database
       const savedClient = await newClient.save();
 
+      // Send success response
       res.status(201).json({
         data: savedClient,
-        message: "Client successfully uploaded",
+        message: "Client successfully created",
       });
     } catch (error) {
       console.error("Error creating client:", error);
-      res
-        .status(500)
-        .json({ message: "Unable to reach server", error: error.message });
+      res.status(500).json({
+        message: "Unable to reach server",
+        error: error.message,
+      });
     }
   }
 );

@@ -1,6 +1,14 @@
-export const checkAuth = (req, res, next) => {
-  console.log(req.session);
-  if (req.session.user) return next();
+// checkAuth.js
+const checkAuth = (req, res, next) => {
+  // Check if the user session exists
+  if (req.session && req.session.user) {
+    return next(); // User is authenticated, proceed to next middleware or route handler
+  }
 
-  res.status(401).send("Unauthenticated user");
+  // If no session or user found, return 401 Unauthorized
+  return res
+    .status(401)
+    .json({ message: "Unauthorized. Please log in to continue." });
 };
+
+export { checkAuth };

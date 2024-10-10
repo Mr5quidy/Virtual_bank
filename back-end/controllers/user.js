@@ -1,6 +1,7 @@
 import Router from "express";
 import User from "../models/user.js";
 import bcrypt from "bcrypt";
+import { checkAuth } from "../middleware/auth.js";
 
 const router = Router();
 
@@ -80,11 +81,35 @@ router.post("/login", async (req, res) => {
     // Store the user ID and username in the session (without the password)
     req.session.user = { id: user._id, userName: user.userName };
 
-    res.status(200).json({ message: "Login successful" });
+    // Return user data along with success message
+    res.status(200).json({
+      message: "Login successful",
+      data: { id: user._id, userName: user.userName }, // Include user data
+    });
   } catch (e) {
     console.error("Error during login:", e);
     res.status(500).json({ message: "Unable to reach server" });
   }
+});
+router.get("/check-user", checkAuth, (req, res) => {
+  // Ensure the session and user exist
+  if (!req.session || !req.session.user) {
+    return res.status(401).json({ message: "Unauthorized" });
+  }
+
+  // Send back user data from the session
+  res.json({
+    id: req.session.user.id,
+    userName: req.session.user.userName,
+  });
+});
+router.post("/logout", (req, res) => {
+  req.session.destroy((err) => {
+    if (err) {
+      return res.status(500).json({ message: "Unable to log out" });
+    }
+    res.status(200).json({ message: "Logout successful" });
+  });
 });
 
 export default router;
