@@ -8,33 +8,36 @@ import client from "./controllers/client.js";
 
 const config = dotenv.config().parsed;
 
+// Function to start the server
 const startServer = async () => {
-  // Bandome prisijungti prie duomenų bazės
+  // Connect to the database
   try {
-    await mongoose.connect(config.MONGO_URL);
+    await mongoose.connect(config.MONGO_URL); // No options needed
     console.log("Connected to the database!");
   } catch (error) {
-    console.error("Prisijungimas nepavyko:", error);
+    console.error("Database connection failed:", error);
+    return; // Exit if unable to connect to the database
   }
 
-  // Express aplikacijos iniciavimas
+  // Initialize Express application
   const app = express();
 
-  app.set("trust proxy", 1);
+  app.set("trust proxy", 1); // Trust first proxy
 
+  // Configure session middleware
   app.use(
     session({
-      secret: "keyboard cat",
+      secret: "keyboard cat", // Change this secret for production
       resave: false,
       saveUninitialized: false,
       cookie: { secure: false, maxAge: 1000 * 60 * 60 * 24, httpOnly: true },
     })
   );
 
-  // x-www-formurlencoded duomenu priėmimo registravimas
+  // Middleware to parse URL-encoded data
   app.use(express.urlencoded({ extended: true }));
 
-  // json duomenu priemimo registravimas
+  // Middleware to parse JSON data
   app.use(express.json());
 
   // CORS configuration
@@ -45,18 +48,18 @@ const startServer = async () => {
     })
   );
 
-  // Failų direktorijos priėjimo priskyrimas
+  // Serve static files from the uploads directory
   app.use("/photos", express.static("./uploads"));
 
-  // Controllerio priskyrimas prie express'o
-  app.use("/api/user", user);
-  app.use("/api/client", client);
+  // Assign routes to controllers
+  app.use("/api/user", user); // User routes
+  app.use("/api/client", client); // Client routes
 
-  // Serverio paleidimas
+  // Start the server
   app.listen(config.DEV_PORT, () => {
     console.log(`Server running on port ${config.DEV_PORT}`);
   });
 };
 
-// Paleisti serverį
+// Start the server
 startServer();

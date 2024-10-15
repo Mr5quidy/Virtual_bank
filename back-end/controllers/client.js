@@ -1,7 +1,9 @@
+// Import necessary modules
 import { Router } from "express";
+import multer from "multer"; // Import multer for file handling
 import Client from "../models/client.js";
 import { upload } from "../middleware/upload.js";
-import { checkAuth } from "../middleware/auth.js";
+import { checkAuth } from "../middleware/auth.js"; // Assuming you have this middleware
 
 const router = Router();
 
@@ -20,10 +22,15 @@ const uploadErrorHandler = (err, req, res, next) => {
   }
   next();
 };
+
+// Route to fetch clients for the authenticated user, sorted by last name (secondName)
 router.get("/clients", checkAuth, async (req, res) => {
   try {
-    const clients = await Client.find({ user: req.session.user.id }); // Fetch clients for the logged-in user
-    res.status(200).json(clients); // Return the list of clients
+    const clients = await Client.find({ user: req.session.user.id }).sort({
+      secondName: 1,
+    }); // Sort by last name (secondName) in ascending order (1 for ascending, -1 for descending)
+
+    res.status(200).json(clients); // Return the list of sorted clients
   } catch (error) {
     console.error("Error fetching clients:", error);
     res
@@ -31,7 +38,67 @@ router.get("/clients", checkAuth, async (req, res) => {
       .json({ message: "Unable to reach server", error: error.message });
   }
 });
+router.delete("/:id", checkAuth, async (req, res) => {
+  const { id } = req.params; // Get the client ID from the request parameters
 
+  try {
+    const client = await Client.findById(id); // Fetch the client by ID
+
+    if (!client) {
+      return res.status(404).json({ message: "Client not found" });
+    }
+
+    // Ensure the client can only be deleted if the wallet balance is 0
+    if (client.wallet !== 0) {
+      return res.status(400).json({
+        message: "Client cannot be deleted unless the balance is 0",
+      });
+    }
+
+    // If the balance is 0, delete the client
+    await Client.findByIdAndDelete(id);
+
+    res.status(200).json({ message: "Client deleted successfully" });
+  } catch (error) {
+    console.error("Error deleting client:", error);
+    res.status(500).json({ message: "Error deleting client" });
+  }
+});
+
+router.get("/:id", checkAuth, async (req, res) => {
+  const { id } = req.params; // Extract client ID from parameters
+  try {
+    const client = await Client.findById(id); // Fetch client by ID
+    if (!client) {
+      return res.status(404).json({ message: "Client not found" });
+    }
+    res.status(200).json(client); // Return client data
+  } catch (error) {
+    console.error("Error fetching client:", error);
+    res.status(500).json({ message: "Error fetching client data" });
+  }
+});
+
+router.put("/:id/balance", async (req, res) => {
+  const { id } = req.params;
+  console.log(`Received request to update balance for client ID: ${id}`); // Log ID
+
+  const { wallet } = req.body;
+
+  try {
+    const client = await Client.findById(id); // Find the client
+    if (!client) {
+      return res.status(404).json({ message: "Client not found" });
+    }
+
+    client.wallet += wallet; // Update the wallet
+    await client.save(); // Save changes
+    res.status(200).json(client); // Send back updated client data
+  } catch (error) {
+    console.error("Error in updating balance:", error); // Log errors
+    res.status(500).json({ message: "Error updating balance" });
+  }
+});
 // New client creation route
 router.post(
   "/create-client",

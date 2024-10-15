@@ -4,21 +4,21 @@ import mongoose, { Schema } from "mongoose";
 export default mongoose.model(
   "Client",
   new Schema({
-    // Vartotojo vardas
+    // Client Name
     firstName: {
       type: String,
       required: true,
       minLength: 3,
       maxLength: 20,
     },
-    // Vartotojo pavarde
+    // Client Last Name
     secondName: {
       type: String,
       required: true,
       minLength: 3,
       maxLength: 20,
     },
-    // Saskaitos numeris
+    // Client IBAN
     iban: {
       type: String, // Changed to String since IBAN may contain letters and leading zeros
       unique: true,
@@ -26,7 +26,7 @@ export default mongoose.model(
       minLength: 20,
       maxLength: 34, // IBANs can be up to 34 characters, so adjusted maxLength
     },
-    // Asmens kodas
+    // Client ID
     idNumber: {
       type: String,
       unique: true,
@@ -34,10 +34,15 @@ export default mongoose.model(
       minLength: 11,
       maxLength: 11,
     },
-    // Asmens paso nuotrauka
+    // Client ID Photo
     idPhoto: {
       type: String,
       required: true,
+    },
+    wallet: {
+      type: Number,
+      default: 0,
+      min: 0,
     },
     // User reference (the one who created the client)
     user: {

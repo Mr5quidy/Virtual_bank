@@ -1,16 +1,16 @@
 import mongoose, { Schema } from "mongoose";
 
-// Users modelis
+// User model
 export default mongoose.model(
   "User",
   new Schema({
-    // Prisijungimo vardas
+    // Login
     userName: {
       type: String,
       unique: true,
       required: true,
     },
-    // Prisijungimo slaptazodis
+    // Password
     password: {
       type: String,
       required: true,
